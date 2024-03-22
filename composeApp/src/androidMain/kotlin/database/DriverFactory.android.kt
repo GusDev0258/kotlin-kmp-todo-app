@@ -7,6 +7,6 @@ import udesc.eso.ddm.kotlin.TodoDatabase
 
 actual class DriverFactory(private val context: Context) {
     actual fun createDriver(): SqlDriver {
-        return AndroidSqliteDriver(TodoDatabase.Schema, context, "test.db")
+        return AndroidSqliteDriver(TodoDatabase.Schema, context, null)
     }
 }
