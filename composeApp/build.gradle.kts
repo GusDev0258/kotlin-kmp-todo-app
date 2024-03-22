@@ -32,6 +32,46 @@ kotlin {
 
     sourceSets {
         val desktopMain by getting
+        val commonMain by getting
+
+        commonMain.dependencies {
+            //Shared dependencies
+            //Default
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(compose.components.resources)
+            implementation(compose.components.uiToolingPreview)
+            //Custom
+            //Ktor
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.client.serialization)
+            implementation(libs.ktor.client.content)
+            //Kotlinx
+            implementation(libs.kotlinx.coroutines)
+//            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.kotlinx.serialization)
+            implementation(libs.kotlinx.datetime)
+            //Moko
+            implementation(libs.moko.mvvm.core)
+            implementation(libs.moko.mvvm.compose)
+            //Kamel
+            implementation(libs.kamel)
+            //Voyager
+            implementation(libs.voyager.navigator)
+            implementation(libs.voyager.bottom.navigator)
+            implementation(libs.voyager.tab.navigator)
+            implementation(libs.voyager.screenmodel)
+            implementation(libs.voyager.transitions)
+            //Charts plot
+            implementation(libs.koala.plot)
+
+            //Icons
+            implementation(libs.composeIcons.feather)
+        }
         androidMain.dependencies {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
@@ -57,45 +97,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.sqlDelight.jvm)
         }
-        commonMain.dependencies {
-            //Shared dependencies
-            //Default
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            //Custom
-            //Ktor
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.cio)
-            implementation(libs.ktor.client.serialization)
-            implementation(libs.ktor.client.content)
-            //Kotlinx
-            implementation(libs.kotlinx.coroutines)
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.kotlinx.serialization)
-            implementation(libs.kotlinx.datetime)
-            //Moko
-            implementation(libs.moko.mvvm.core)
-            implementation(libs.moko.mvvm.compose)
-            //Kamel
-            implementation(libs.kamel)
-            //Voyager
-            implementation(libs.voyager.navigator)
-            implementation(libs.voyager.bottom.navigator)
-            implementation(libs.voyager.tab.navigator)
-            implementation(libs.voyager.screenmodel)
-            implementation(libs.voyager.transitions)
-            //Charts plot
-            implementation(libs.koala.plot)
-
-            //Icons
-            implementation(libs.composeIcons.feather)
-        }
-
     }
 }
 
@@ -129,7 +130,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     dependencies {
-        debugImplementation(libs.compose.ui.tooling)
+//        debugImplementation(libs.compose.ui.tooling)
     }
 }
 
@@ -148,7 +149,6 @@ sqldelight {
     databases {
         create("TodoDatabase") {
             packageName.set("udesc.eso.ddm.kotlin")
-            generateAsync.set(true)
         }
     }
 }

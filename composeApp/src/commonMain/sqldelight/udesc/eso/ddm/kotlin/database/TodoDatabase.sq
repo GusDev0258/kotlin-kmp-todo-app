@@ -35,3 +35,11 @@ WHERE id = ?;
 deleteById:
 DELETE FROM TodoEntity
 WHERE id = ?;
+
+selectNotCompletedTodos:
+SELECT * FROM TodoEntity AS te
+WHERE te.isCompleted = 0;
+
+selectCompletedTodos:
+SELECT * FROM TodoEntity AS te
+WHERE te.isCompleted = 1;

@@ -1,5 +1,4 @@
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,39 +23,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.cash.sqldelight.db.SqlDriver
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Home
 import compose.icons.feathericons.Plus
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
-import model.TodoDataClass
-import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-import mytodolistapp2.composeapp.generated.resources.Res
-import mytodolistapp2.composeapp.generated.resources.compose_multiplatform
-import org.jetbrains.compose.resources.vectorResource
+import udesc.eso.ddm.kotlin.TodoDatabase
+import udesc.eso.ddm.kotlin.database.TodoEntity
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 @ExperimentalMaterial3Api
 @Preview
-fun App() {
-
+fun App(database: SqlDriver) {
     MaterialTheme {
         val homeIcon = remember { FeatherIcons.Home }
 
-        val todo1 = TodoDataClass(
-            id = 1,
-            title = "Create zist",
-            description = "Criar",
-            dueDate = LocalDate.toString(),
-            created_at = LocalDate.toString(),
-            updated_at = null
-        )
-        val todoList: MutableList<TodoDataClass> = mutableListOf(todo1)
-        var todoListState: MutableList<TodoDataClass> =
-            remember { mutableStateListOf<TodoDataClass>(todo1) }
+//        val todo1 = TodoDataClass(
+//            id = 1,
+//            title = "Create zist",
+//            description = "Criar",
+//            dueDate = LocalDate.toString(),
+//            created_at = LocalDate.toString(),
+//            updated_at = null
+//        )
+//        val todoList: MutableList<TodoDataClass> = mutableListOf(todo1)
+        val todoListState = remember { mutableStateOf(listOf<TodoEntity>()) }
+        val actionCreateTodo = {
+            handleTodoCreation(database)
+            val updatedList = handleTodoListing(database)
+            todoListState.value = updatedList
+        }
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -95,20 +94,20 @@ fun App() {
                 }
             },
             floatingActionButton = {
-                CreateTodoButton()
+                TodoButton(action =  actionCreateTodo )
             }) { innerPadding ->
             Column(
                 modifier = Modifier.padding(innerPadding),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                TodoListComponent(todoListState)
+                TodoListComponent(todoListState.value)
             }
         }
     }
 }
 
 @Composable
-fun TodoListComponent(todoList: MutableList<TodoDataClass>) {
+fun TodoListComponent(todoList: List<TodoEntity>) {
     LazyColumn(
 
     ) {
@@ -119,9 +118,9 @@ fun TodoListComponent(todoList: MutableList<TodoDataClass>) {
 }
 
 @Composable
-fun TodoComponent(todoList: MutableList<TodoDataClass>) {
-    var isChecked = remember { mutableStateOf(false) }
-    todoList.forEach { it ->
+fun TodoComponent(todoList: List<TodoEntity>) {
+    val isChecked = remember { mutableStateOf(false) }
+    todoList.forEach {
         LazyRow(
             modifier = Modifier.padding(16.dp).background(Color.Transparent),
             horizontalArrangement = Arrangement.Center,
@@ -144,11 +143,11 @@ fun TodoComponent(todoList: MutableList<TodoDataClass>) {
 }
 
 @Composable
-fun CreateTodoButton() {
+fun TodoButton(action: () -> Unit) {
     val plusIcon = remember { FeatherIcons.Plus }
     FloatingActionButton(
         containerColor = Color.Yellow,
-        onClick = {},
+        onClick = action,
         shape = RoundedCornerShape(12.dp)
     ) {
         Icon(
@@ -161,10 +160,36 @@ fun CreateTodoButton() {
 }
 
 @Composable
-fun customCheckBoxColors(): androidx.compose.material3.CheckboxColors {
+fun customCheckBoxColors(): CheckboxColors {
     return CheckboxDefaults.colors(
         checkedColor = Color.Yellow,
         uncheckedColor = Color.LightGray,
         checkmarkColor = Color.Black,
     )
+}
+
+fun handleTodoCreation(db: SqlDriver) {
+    val database = TodoDatabase(db)
+    try {
+        println("Socorro")
+        println(database.todoDatabaseQueries.createTodo(
+            title = "Fazer o sqldelight funfar",
+            description = "sqlDelight",
+            created_at = LocalDate.toString(),
+            dueDate = LocalDate.toString(),
+            isCompleted = 0
+        ))
+    } catch (e: Exception) {
+        println("Error inserting todo: ${e.message}")
+    }
+}
+fun handleTodoListing(db: SqlDriver): List<TodoEntity> {
+    return try {
+        val database = TodoDatabase(db);
+        println(database.todoDatabaseQueries.selectAllTodos().executeAsList())
+        database.todoDatabaseQueries.selectAllTodos().executeAsList()
+    } catch(e: Exception) {
+        println("Error on getting todos: ${e.message}")
+        emptyList()
+    }
 }
