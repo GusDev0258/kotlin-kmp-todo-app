@@ -1,6 +1,7 @@
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -185,6 +187,14 @@ fun customCheckBoxColors(): CheckboxColors {
         checkmarkColor = Color.Black,
     )
 }
+@Composable
+fun customTextFieldColors(): TextFieldColors {
+    return TextFieldDefaults.colors(
+       unfocusedContainerColor = Color.Transparent,
+        focusedContainerColor = Color.Black,
+        focusedTextColor = Color.White
+    )
+}
 
 fun handleTodoCreation(
     driver: SqlDriver,
@@ -244,27 +254,30 @@ fun createTodoInput(
         TextField(
             value = todoName.value,
             onValueChange = { newName -> todoName.value = newName },
-            modifier = Modifier.background(Color.Transparent).fillMaxWidth()
+            modifier = Modifier.background(Color.Transparent).fillMaxWidth(),
+            colors = customTextFieldColors()
         )
         TextField(
             value = todoDescription.value,
             onValueChange = { newDescription -> todoDescription.value = newDescription },
-            modifier = Modifier.background(Color.Transparent).fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+                    colors = customTextFieldColors()
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            TextButton(onClick = { showDatePickerDialog = !showDatePickerDialog }, modifier = Modifier.background(Color.Yellow).width(200.dp), shape = RoundedCornerShape(6.dp)) {
+            TextButton(onClick = { showDatePickerDialog = !showDatePickerDialog }, modifier = Modifier.background(Color.Yellow).width(200.dp).border(2.dp, Color.Black, RoundedCornerShape(6.dp)), shape = RoundedCornerShape(12.dp)) {
                 Text("Definir prazo da tarefa", color = Color.Black)
             }
             Button(
                 onClick = actionConfirm,
+                modifier = Modifier.alignByBaseline(),
 
             ) {
-                Text("Criar")
-                Icon(imageVector = sendIcon, contentDescription = "send")
+                Text("CRIAR  ", color = Color.Black)
+                Icon(imageVector = sendIcon, contentDescription = "send", modifier = Modifier.size(14.dp))
             }
         }
 
