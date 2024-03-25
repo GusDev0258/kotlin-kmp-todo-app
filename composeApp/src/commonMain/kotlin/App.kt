@@ -29,7 +29,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import app.cash.sqldelight.db.SqlDriver
@@ -153,8 +155,9 @@ fun TodoComponent(todo: TodoEntity) {
                 Text(
                     text = todo.title,
                     modifier = Modifier.padding(2.dp),
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
+                    color = if(isChecked.value) Color.Gray else Color.Black,
+                    fontWeight = FontWeight.Medium,
+                    textDecoration = if(isChecked.value) TextDecoration.LineThrough else null
                 )
             }
 
