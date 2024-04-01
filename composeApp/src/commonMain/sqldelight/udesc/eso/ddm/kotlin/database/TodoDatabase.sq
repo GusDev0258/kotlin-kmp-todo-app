@@ -19,7 +19,7 @@ WHERE te.id = ?;
 selectAllTodos:
 SELECT * FROM TodoEntity;
 
-editTodoById:
+changeTodoById:
 UPDATE TodoEntity
 SET title = ?,
 description = ?,
@@ -27,7 +27,17 @@ dueDate = ?,
 updated_at = ?
 WHERE id = ?;
 
-editTodoDueDateById:
+completeTodoById:
+UPDATE TodoEntity
+SET isCompleted = 1
+WHERE id = ?;
+
+unCompleteTodoById:
+UPDATE TodoEntity
+SET isCompleted = 0
+WHERE id = ?;
+
+changeTodoDueDateById:
 UPDATE TodoEntity
 SET dueDate = ?
 WHERE id = ?;

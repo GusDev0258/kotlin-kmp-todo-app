@@ -10,24 +10,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import app.cash.sqldelight.db.SqlDriver
 import database.DriverFactory
+import database.repository.TodoRepositoryImpl
+import repository.TodoRepositoryProtocol
 
 class MainActivity : ComponentActivity() {
     private lateinit var sqlDriver: SqlDriver
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sqlDriver = DriverFactory(this).createDriver()
+        val androidSqlDriver = DriverFactory(this).createDriver()
+        val todoRepository: TodoRepositoryProtocol = TodoRepositoryImpl(androidSqlDriver )
         setContent {
-            App(sqlDriver)
+            App(todoRepository)
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    val db = DriverFactory(Application()).createDriver()
-    App(db)
-}
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Preview
+//@Composable
+//fun AppAndroidPreview() {
+//    val db = DriverFactory(Application()).createDriver()
+//    App(db)
+//}
 

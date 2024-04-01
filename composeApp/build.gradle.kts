@@ -71,6 +71,9 @@ kotlin {
 
             //Icons
             implementation(libs.composeIcons.feather)
+
+            //SqlDelight flow
+            implementation(libs.sqlDelight.flow)
         }
         androidMain.dependencies {
             implementation(libs.compose.ui.tooling.preview)

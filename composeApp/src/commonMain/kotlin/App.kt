@@ -33,16 +33,21 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import app.cash.sqldelight.db.SqlDriver
 import compose.icons.FeatherIcons
+import compose.icons.feathericons.Bookmark
 import compose.icons.feathericons.Home
 import compose.icons.feathericons.Plus
 import compose.icons.feathericons.Send
+import compose.icons.feathericons.User
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.vectorResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import repository.TodoRepositoryProtocol
 
 import udesc.eso.ddm.kotlin.TodoDatabase
 import udesc.eso.ddm.kotlin.database.TodoEntity
@@ -50,11 +55,20 @@ import udesc.eso.ddm.kotlin.database.TodoEntity
 @Composable
 @ExperimentalMaterial3Api
 @Preview
-//TODO: Fix duplicated todos
-fun App(driver: SqlDriver) {
+fun App(repository: TodoRepositoryProtocol) {
     MaterialTheme {
         val homeIcon = remember { FeatherIcons.Home }
+        val userIcon = remember { FeatherIcons.User }
+        val bookMarkIcon = remember { FeatherIcons.Bookmark }
         var isCreatingTodo = remember { mutableStateOf(false) }
+        val todoListState = remember { mutableStateOf<List<TodoEntity>>(listOf()) }
+        val scope = rememberCoroutineScope()
+
+        LaunchedEffect(key1 = Unit) {
+            repository.getAllTodos().collect { todos ->
+                todoListState.value = todos
+            }
+        }
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -86,22 +100,35 @@ fun App(driver: SqlDriver) {
                             )
                         )
                     ) {
-                        Icon(imageVector = homeIcon, contentDescription = "")
-                        Icon(imageVector = homeIcon, contentDescription = "")
-                        Icon(imageVector = homeIcon, contentDescription = "")
+                        Icon(imageVector = userIcon, contentDescription = "user Icon")
+                        Icon(imageVector = homeIcon, contentDescription = "home Icon")
+                        Icon(imageVector = bookMarkIcon, contentDescription = "bookmark Icon")
                     }
                 }
             },
             floatingActionButton = {
-                if(!isCreatingTodo.value) {
+                if (!isCreatingTodo.value) {
                     TodoButton(action = { isCreatingTodo.value = !isCreatingTodo.value })
                 }
             }) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
                 Column(
+                    Modifier.padding(8.dp).fillMaxHeight()
                 ) {
-                    val updatedList = handleTodoListing(driver)
-                    TodoListComponent(updatedList)
+                    Column() {
+                        Text("Tarefas para fazer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        TodoListComponent(
+                            todoListState.value.filter { it.isCompleted == 0L },
+                            repository
+                        )
+                    }
+                    Column() {
+                        Text("Tarefas completas", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        TodoListComponent(
+                            todoListState.value.filter { it.isCompleted == 1L },
+                            repository
+                        )
+                    }
                 }
                 AnimatedVisibility(
                     visible = isCreatingTodo.value,
@@ -113,7 +140,7 @@ fun App(driver: SqlDriver) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Bottom
                     ) {
-                        createTodoInput(isCreatingTodo, driver)
+                        TodoInput(isCreatingTodo, repository)
                     }
                 }
             }
@@ -122,19 +149,19 @@ fun App(driver: SqlDriver) {
 }
 
 @Composable
-fun TodoListComponent(todoList: List<TodoEntity>) {
+fun TodoListComponent(todoList: List<TodoEntity>, repository: TodoRepositoryProtocol) {
     LazyColumn(
         userScrollEnabled = true
     ) {
         items(todoList.size) {
-            TodoComponent(todoList[it])
+            TodoComponent(todoList[it], repository)
         }
     }
 }
 
 @Composable
-fun TodoComponent(todo: TodoEntity) {
-    val isChecked = remember { mutableStateOf(false) }
+fun TodoComponent(todo: TodoEntity, repository: TodoRepositoryProtocol) {
+    val isChecked = remember(todo.isCompleted) { mutableStateOf(todo.isCompleted == 1L) }
     LazyRow(
         modifier = Modifier.padding(16.dp).background(Color.Transparent),
         horizontalArrangement = Arrangement.Center,
@@ -148,16 +175,19 @@ fun TodoComponent(todo: TodoEntity) {
             ) {
                 Checkbox(
                     checked = isChecked.value,
-                    onCheckedChange = { isChecked.value = !isChecked.value },
+                    onCheckedChange = {
+                        isChecked.value = it
+                        changeTodoStatus(repository, todo)
+                    },
                     colors = customCheckBoxColors(),
                     modifier = Modifier.size(32.dp)
                 )
                 Text(
                     text = todo.title,
                     modifier = Modifier.padding(2.dp),
-                    color = if(isChecked.value) Color.Gray else Color.Black,
+                    color = if (isChecked.value || todo.isCompleted == 1L) Color.Gray else Color.Black,
                     fontWeight = FontWeight.Medium,
-                    textDecoration = if(isChecked.value) TextDecoration.LineThrough else null
+                    textDecoration = if (isChecked.value || todo.isCompleted == 1L) TextDecoration.LineThrough else null
                 )
             }
 
@@ -190,49 +220,22 @@ fun customCheckBoxColors(): CheckboxColors {
         checkmarkColor = Color.Black,
     )
 }
+
 @Composable
 fun customTextFieldColors(): TextFieldColors {
     return TextFieldDefaults.colors(
-       unfocusedContainerColor = Color.Transparent,
-        focusedContainerColor = Color.Black,
-        focusedTextColor = Color.White
+        unfocusedContainerColor = Color.White,
+        focusedContainerColor = Color.White,
+        focusedTextColor = Color.Black,
+        cursorColor = Color.Black,
     )
 }
 
-fun handleTodoCreation(
-    driver: SqlDriver,
-    todoName: String,
-    todoDescription: String,
-    todoDueDate: String
-) {
-    val db = TodoDatabase(driver)
-    try {
-        db.todoDatabaseQueries.createTodo(
-            title = todoName,
-            description = todoDescription,
-            created_at = LocalDate.toString(),
-            dueDate = todoDueDate,
-            isCompleted = 0
-        )
-    } catch (e: Exception) {
-        println("Error inserting todo: ${e.message}")
-    }
-}
-
-fun handleTodoListing(driver: SqlDriver): List<TodoEntity> {
-    return try {
-        val db = TodoDatabase(driver);
-        db.todoDatabaseQueries.selectAllTodos().executeAsList()
-    } catch (e: Exception) {
-        println("Error on getting todos: ${e.message}")
-        emptyList()
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun createTodoInput(
-    isActive: MutableState<Boolean>, driver: SqlDriver
+fun TodoInput(
+    isActive: MutableState<Boolean>, repository: TodoRepositoryProtocol
 ) {
     val todoName = remember { mutableStateOf("") }
     val todoDescription = remember { mutableStateOf("") }
@@ -242,8 +245,8 @@ fun createTodoInput(
     var showDatePickerDialog by remember { mutableStateOf(false) }
     val sendIcon = remember { FeatherIcons.Send }
     val actionConfirm = {
-        handleTodoCreation(
-            driver,
+        createTodo(
+            repository,
             todoName.value,
             todoDescription.value,
             todoDueDate.value
@@ -257,30 +260,39 @@ fun createTodoInput(
         TextField(
             value = todoName.value,
             onValueChange = { newName -> todoName.value = newName },
-            modifier = Modifier.background(Color.Transparent).fillMaxWidth(),
+            modifier = Modifier.background(Color.White).fillMaxWidth(),
             colors = customTextFieldColors()
         )
         TextField(
             value = todoDescription.value,
             onValueChange = { newDescription -> todoDescription.value = newDescription },
             modifier = Modifier.fillMaxWidth(),
-                    colors = customTextFieldColors()
+            colors = customTextFieldColors()
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            TextButton(onClick = { showDatePickerDialog = !showDatePickerDialog }, modifier = Modifier.background(Color.Yellow).width(200.dp).border(2.dp, Color.Black, RoundedCornerShape(6.dp)), shape = RoundedCornerShape(12.dp)) {
+            TextButton(
+                onClick = { showDatePickerDialog = !showDatePickerDialog },
+                modifier = Modifier.background(Color.Yellow).width(200.dp)
+                    .border(2.dp, Color.Black, RoundedCornerShape(6.dp)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Text("Definir prazo da tarefa", color = Color.Black)
             }
             Button(
                 onClick = actionConfirm,
                 modifier = Modifier.alignByBaseline(),
 
-            ) {
+                ) {
                 Text("CRIAR  ", color = Color.Black)
-                Icon(imageVector = sendIcon, contentDescription = "send", modifier = Modifier.size(14.dp))
+                Icon(
+                    imageVector = sendIcon,
+                    contentDescription = "send",
+                    modifier = Modifier.size(14.dp)
+                )
             }
         }
 
@@ -309,3 +321,21 @@ fun createTodoInput(
 
     }
 }
+
+fun changeTodoStatus(
+    repository: TodoRepositoryProtocol,
+    todo: TodoEntity
+) {
+    if (todo.isCompleted == 0L) {
+        repository.completeTodo(todo.id)
+    } else {
+        repository.unCompleteTodo(todo.id)
+    }
+}
+
+fun createTodo(
+    repository: TodoRepositoryProtocol, title: String, description: String, dueDate: String
+) {
+    repository.registerTodo(title, description, dueDate)
+}
+
